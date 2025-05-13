@@ -1,0 +1,23 @@
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import mysql.connector
+import bcrypt
+app = FastAPI()
+db = mysql.connector.connect(
+    host="localhost",user="root",password="",database="website_users"  
+)
+cursor = db.cursor()
+TEMPLATE_DIR = r"C:\Users\coder\OneDrive\Documents\templates"
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
+@app.get("/", response_class=HTMLResponse)
+def show_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+@app.post("/")
+def handle_form(name: str = Form(...), email: str = Form(...), password: str = Form(...)):
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    sql = "INSERT INTO users (full_name, username, password) VALUES (%s, %s, %s)"
+    val = (name, email, hashed_password)
+    cursor.execute(sql, val)
+    db.commit()
+    return {"message": "User registered successfully!", "name": name, "email": email}
